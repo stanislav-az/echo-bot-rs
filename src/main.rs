@@ -5,17 +5,12 @@ fn main() {
 }
 
 fn run_console_bot() {
-    loop {
-        console_bot_cycle()
-    }
+    io::stdin().lines().for_each(|elem| {
+        let input = elem.expect("Failed to read user input");
+        console_bot_cycle(input);
+    });
 }
 
-fn console_bot_cycle() {
-    let mut input = String::new();
-
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read user input");
-
-    println!("{input}")
+fn console_bot_cycle(user_input: String) {
+    println!("{user_input}");
 }
