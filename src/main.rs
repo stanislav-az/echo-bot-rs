@@ -17,5 +17,5 @@ Or --config param",
         process::exit(1);
     });
 
-    run_console_bot();
+    run_console_bot(config);
 }

@@ -17,7 +17,7 @@ impl Config {
             None
         };
         let default_path = String::from("config/settings.local.yaml");
-        
+
         let config_path = args_path.unwrap_or(&default_path);
 
         let yaml = read_to_string(config_path)?;
