@@ -18,40 +18,46 @@ impl ConsoleBotState {
     }
 }
 
-pub fn console_bot_cycle(conf: &Config, state: &mut ConsoleBotState, user_input: String) {
+pub fn respond_to_user(conf: &Config, state: &mut ConsoleBotState, user_input: String) -> String {
     if state.is_awaiting_repeat_number {
         let new_repeat = user_input.parse::<u8>();
-        match new_repeat {
+        let repeat_msg = match new_repeat {
             Ok(n) => {
                 if n > 0 {
                     state.custom_repeat_number = Some(n);
                     state.tweak_is_awaiting();
-                    println!("Repeat number changed to: {}", n);
+                    format!("Repeat number changed to: {}", n)
                 } else {
-                    println!("Failed to parse an integer number, that is greater than zero");
-                    println!("{}", conf.repeat_msg);
+                    mk_failed_repeat_msg(conf)
                 }
             }
-            _ => {
-                println!("Failed to parse an integer number, that is greater than zero");
-                println!("{}", conf.repeat_msg);
-            }
-        }
-        return;
+            _ => mk_failed_repeat_msg(conf),
+        };
+        return repeat_msg;
     }
     if user_input.trim() == "/help" {
-        println!("{}", conf.help_msg);
-        return;
+        return conf.help_msg.clone();
     }
     if user_input.trim() == "/repeat" {
         state.tweak_is_awaiting();
-        println!("{}", conf.repeat_msg);
+        conf.repeat_msg.clone()
     } else {
         let repeat_number = state
             .custom_repeat_number
             .unwrap_or(conf.default_repeat_number);
-        for _ in 0..repeat_number {
-            println!("{user_input}");
+        let mut repeat_user_input = user_input.clone();
+        for _ in 1..repeat_number {
+            repeat_user_input.push('\n');
+            repeat_user_input.push_str(&user_input);
         }
+        repeat_user_input
     }
+}
+
+fn mk_failed_repeat_msg(conf: &Config) -> String {
+    let mut failed_repeat_msg =
+        String::from("Failed to parse an integer number, that is greater than zero");
+    failed_repeat_msg.push('\n');
+    failed_repeat_msg.push_str(&conf.repeat_msg);
+    failed_repeat_msg
 }
