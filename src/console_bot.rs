@@ -21,25 +21,29 @@ impl ConsoleBotState {
 pub fn console_bot_cycle(conf: &Config, state: &mut ConsoleBotState, user_input: String) {
     if state.is_awaiting_repeat_number {
         let new_repeat = user_input.parse::<u8>();
-        // TODO what if repeat number is 0?
         match new_repeat {
-            Err(_) => {
-                println!("Failed to parse an integer number.");
-                println!("{}", conf.repeat_msg);
-            }
             Ok(n) => {
-                state.custom_repeat_number = Some(n);
-                state.tweak_is_awaiting();
-                println!("Repeat number changed to: {}", n);
+                if n > 0 {
+                    state.custom_repeat_number = Some(n);
+                    state.tweak_is_awaiting();
+                    println!("Repeat number changed to: {}", n);
+                } else {
+                    println!("Failed to parse an integer number, that is greater than zero");
+                    println!("{}", conf.repeat_msg);
+                }
+            }
+            _ => {
+                println!("Failed to parse an integer number, that is greater than zero");
+                println!("{}", conf.repeat_msg);
             }
         }
         return;
     }
-    if user_input == "/help" {
+    if user_input.trim() == "/help" {
         println!("{}", conf.help_msg);
         return;
     }
-    if user_input == "/repeat" {
+    if user_input.trim() == "/repeat" {
         state.tweak_is_awaiting();
         println!("{}", conf.repeat_msg);
     } else {
