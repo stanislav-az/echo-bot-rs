@@ -68,20 +68,19 @@ mod tests {
 
     #[test]
     fn should_repeat_user_messages() {
-        let msg = String::from("Hi!");
         let mut state = ConsoleBotState::new();
         let conf = Config {
             help_msg: String::from("help_msg"),
             repeat_msg: String::from("repeat_msg"),
             default_repeat_number: 1,
         };
+        let msg = String::from("Hi!");
         let response = respond_to_user(&conf, &mut state, msg.clone());
         assert_eq!(response, msg);
     }
 
     #[test]
     fn should_send_special_help_msg() {
-        let msg = String::from("/help");
         let mut state = ConsoleBotState::new();
         let help_msg = String::from("help_msg");
         let conf = Config {
@@ -89,13 +88,13 @@ mod tests {
             repeat_msg: String::from("repeat_msg"),
             default_repeat_number: 1,
         };
+        let msg = String::from("/help");
         let response = respond_to_user(&conf, &mut state, msg.clone());
         assert_eq!(response, help_msg);
     }
 
     #[test]
     fn should_send_special_repeat_msg() {
-        let msg = String::from("/repeat");
         let mut state = ConsoleBotState::new();
         let repeat_msg = String::from("repeat_msg");
         let conf = Config {
@@ -103,22 +102,40 @@ mod tests {
             repeat_msg: repeat_msg.clone(),
             default_repeat_number: 1,
         };
+        let msg = String::from("/repeat");
         let response = respond_to_user(&conf, &mut state, msg.clone());
         assert_eq!(response, repeat_msg);
     }
 
     #[test]
     fn should_change_repeat_number() {
-        let msg1 = String::from("/repeat");
         let mut state = ConsoleBotState::new();
         let conf = Config {
             help_msg: String::from("help_msg"),
             repeat_msg: String::from("repeat_msg"),
             default_repeat_number: 1,
         };
-        let response1 = respond_to_user(&conf, &mut state, msg1);
+        let msg1 = String::from("/repeat");
+        let _response1 = respond_to_user(&conf, &mut state, msg1);
         let msg2 = String::from("2");
         let response2 = respond_to_user(&conf, &mut state, msg2);
         assert_eq!(response2, "Repeat number changed to: 2");
+    }
+
+    #[test]
+    fn should_repeat_user_messages_with_customized_repeat() {
+        let mut state = ConsoleBotState::new();
+        let conf = Config {
+            help_msg: String::from("help_msg"),
+            repeat_msg: String::from("repeat_msg"),
+            default_repeat_number: 1,
+        };
+        let msg1 = String::from("/repeat");
+        let _response1 = respond_to_user(&conf, &mut state, msg1);
+        let msg2 = String::from("2");
+        let _response2 = respond_to_user(&conf, &mut state, msg2);
+        let msg3 = String::from("hey");
+        let response3 = respond_to_user(&conf, &mut state, msg3);
+        assert_eq!(response3, "hey\nhey");
     }
 }
