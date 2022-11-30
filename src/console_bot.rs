@@ -61,3 +61,35 @@ fn mk_failed_repeat_msg(conf: &Config) -> String {
     failed_repeat_msg.push_str(&conf.repeat_msg);
     failed_repeat_msg
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_repeat_user_messages() {
+        let msg = String::from("Hi!");
+        let mut state = ConsoleBotState::new();
+        let conf = Config {
+            help_msg: String::from("help_msg"),
+            repeat_msg: String::from("repeat_msg"),
+            default_repeat_number: 1,
+        };
+        let response = respond_to_user(&conf, &mut state, msg.clone());
+        assert_eq!(response, msg);
+    }
+
+    #[test]
+    fn should_send_special_help_msg() {
+        let msg = String::from("/help");
+        let mut state = ConsoleBotState::new();
+        let help_msg = String::from("help_msg");
+        let conf = Config {
+            help_msg: help_msg.clone(),
+            repeat_msg: String::from("repeat_msg"),
+            default_repeat_number: 1,
+        };
+        let response = respond_to_user(&conf, &mut state, msg.clone());
+        assert_eq!(response, help_msg);
+    }
+}
