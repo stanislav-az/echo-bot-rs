@@ -92,4 +92,33 @@ mod tests {
         let response = respond_to_user(&conf, &mut state, msg.clone());
         assert_eq!(response, help_msg);
     }
+
+    #[test]
+    fn should_send_special_repeat_msg() {
+        let msg = String::from("/repeat");
+        let mut state = ConsoleBotState::new();
+        let repeat_msg = String::from("repeat_msg");
+        let conf = Config {
+            help_msg: String::from("help_msg"),
+            repeat_msg: repeat_msg.clone(),
+            default_repeat_number: 1,
+        };
+        let response = respond_to_user(&conf, &mut state, msg.clone());
+        assert_eq!(response, repeat_msg);
+    }
+
+    #[test]
+    fn should_change_repeat_number() {
+        let msg1 = String::from("/repeat");
+        let mut state = ConsoleBotState::new();
+        let conf = Config {
+            help_msg: String::from("help_msg"),
+            repeat_msg: String::from("repeat_msg"),
+            default_repeat_number: 1,
+        };
+        let response1 = respond_to_user(&conf, &mut state, msg1);
+        let msg2 = String::from("2");
+        let response2 = respond_to_user(&conf, &mut state, msg2);
+        assert_eq!(response2, "Repeat number changed to: 2");
+    }
 }
