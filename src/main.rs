@@ -5,14 +5,15 @@ use std::process;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    let default_path = String::from("config/settings.local.yaml");
 
-    let config = Config::build(&args).unwrap_or_else(|err| {
+    let config = Config::build(&default_path, &args).unwrap_or_else(|err| {
         eprintln!(
             "\
 Problem parsing configuration: {}
-Expected default path for it: config/settings.local.yaml
+Expected default path for it: {}
 Or --config param",
-            err
+            err, default_path,
         );
         process::exit(1);
     });
