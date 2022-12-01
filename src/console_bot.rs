@@ -1,4 +1,4 @@
-use super::config::Config;
+use super::config::StaticBotSettings;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ConsoleBotState {
@@ -18,7 +18,7 @@ impl ConsoleBotState {
     }
 }
 
-pub fn respond_to_user(conf: &Config, state: &mut ConsoleBotState, user_input: String) -> String {
+pub fn respond_to_user(conf: &StaticBotSettings, state: &mut ConsoleBotState, user_input: String) -> String {
     if state.is_awaiting_repeat_number {
         let new_repeat = user_input.parse::<u8>();
         let repeat_msg = match new_repeat {
@@ -54,7 +54,7 @@ pub fn respond_to_user(conf: &Config, state: &mut ConsoleBotState, user_input: S
     }
 }
 
-fn mk_failed_repeat_msg(conf: &Config) -> String {
+fn mk_failed_repeat_msg(conf: &StaticBotSettings) -> String {
     let mut failed_repeat_msg =
         String::from("Failed to parse an integer number, that is greater than zero");
     failed_repeat_msg.push('\n');
@@ -69,7 +69,7 @@ mod tests {
     #[test]
     fn should_repeat_user_messages() {
         let mut state = ConsoleBotState::new();
-        let conf = Config {
+        let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
             repeat_msg: String::from("repeat_msg"),
             default_repeat_number: 1,
@@ -83,7 +83,7 @@ mod tests {
     fn should_send_special_help_msg() {
         let mut state = ConsoleBotState::new();
         let help_msg = String::from("help_msg");
-        let conf = Config {
+        let conf = StaticBotSettings {
             help_msg: help_msg.clone(),
             repeat_msg: String::from("repeat_msg"),
             default_repeat_number: 1,
@@ -97,7 +97,7 @@ mod tests {
     fn should_send_special_repeat_msg() {
         let mut state = ConsoleBotState::new();
         let repeat_msg = String::from("repeat_msg");
-        let conf = Config {
+        let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
             repeat_msg: repeat_msg.clone(),
             default_repeat_number: 1,
@@ -110,7 +110,7 @@ mod tests {
     #[test]
     fn should_change_repeat_number() {
         let mut state = ConsoleBotState::new();
-        let conf = Config {
+        let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
             repeat_msg: String::from("repeat_msg"),
             default_repeat_number: 1,
@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn should_repeat_user_messages_with_customized_repeat() {
         let mut state = ConsoleBotState::new();
-        let conf = Config {
+        let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
             repeat_msg: String::from("repeat_msg"),
             default_repeat_number: 1,

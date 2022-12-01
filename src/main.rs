@@ -1,3 +1,4 @@
+use echo_bot_rs::config::BotToRun;
 use echo_bot_rs::config::Config;
 use echo_bot_rs::run_console_bot;
 use std::env;
@@ -18,5 +19,8 @@ Or --config param",
         process::exit(1);
     });
 
-    run_console_bot(config);
+    match config.bot_to_run {
+        BotToRun::Console => run_console_bot(&config.static_bot_options),
+        BotToRun::Telegram => panic!("Not implemented"),
+    }
 }

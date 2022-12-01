@@ -4,9 +4,22 @@ use std::fs::read_to_string;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
+    pub bot_to_run: BotToRun,
+    pub static_bot_options: StaticBotSettings,
+    pub telegram_bot_token: String,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StaticBotSettings {
     pub help_msg: String,
     pub repeat_msg: String,
     pub default_repeat_number: u8,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BotToRun {
+    Telegram,
+    Console,
 }
 
 impl Config {
