@@ -13,3 +13,16 @@ pub fn run_console_bot(conf: &StaticBotSettings) {
         println!("{response}");
     });
 }
+
+pub fn run_telegram_bot(bot_token: &String) {
+    let resp = ureq::get(&mk_telegram_api_url(bot_token, "getMe")).call();
+    dbg!(resp);
+}
+
+pub fn mk_telegram_api_url(bot_token: &String, method_name: &str) -> String {
+    let mut url = String::from("https://api.telegram.org/bot");
+    url.push_str(bot_token);
+    url.push('/');
+    url.push_str(method_name);
+    url
+}
