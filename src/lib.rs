@@ -42,7 +42,7 @@ pub fn mk_telegram_api_url(bot_token: &String, method_name: &str) -> String {
 #[serde(untagged)]
 pub enum TelegramResponse<T> {
     Success(TelegramOkResponse<T>),
-    Error(TelegramErrResponse),
+    Error(TelegramApiError),
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -51,7 +51,16 @@ pub struct TelegramOkResponse<T> {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TelegramErrResponse {
-    pub error_code: u32,
+pub struct TelegramApiError {
+    pub error_code: u16,
     pub description: String,
+}
+
+impl<T> TelegramResponse<T> {
+    pub fn into_result(self) -> Result<T,TelegramApiError> {
+        match self {
+            TelegramResponse::Error(err) => Err(err),
+            TelegramResponse::Success(resp) => Ok(resp.result),
+        }
+    }
 }
