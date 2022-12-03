@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::io;
+use std::fmt;
 
 pub mod config;
 pub mod console_bot;
@@ -15,19 +16,35 @@ pub fn run_console_bot(conf: &StaticBotSettings) {
     });
 }
 
-pub fn run_telegram_bot(bot_token: &String) {
+pub fn run_telegram_bot(bot_token: &String) -> Result<(), TelegramBotError> {
     let resp = ureq::get(&mk_telegram_api_url(bot_token, "getMe"))
         .call()
-        .unwrap();
+        .map_err(TelegramBotError::HttpClient)?;
     dbg!(&resp);
-    let json: TelegramResponse<serde_json::Value> = resp.into_json().unwrap();
+    let json: serde_json::Value = resp
+        .into_json::<TelegramResponse<serde_json::Value>>()
+        .map_err(TelegramBotError::Serialization)?
+        .into_result()
+        .map_err(TelegramBotError::Api)?;
     dbg!(&json);
     let resp = ureq::get(&mk_telegram_api_url(bot_token, "getUpdates"))
         .call()
-        .unwrap();
+        .map_err(TelegramBotError::HttpClient)?;
     dbg!(&resp);
-    let json: TelegramResponse<serde_json::Value> = resp.into_json().unwrap();
+    let json: serde_json::Value = resp
+        .into_json::<TelegramResponse<serde_json::Value>>()
+        .map_err(TelegramBotError::Serialization)?
+        .into_result()
+        .map_err(TelegramBotError::Api)?;
     dbg!(&json);
+    Ok(())
+}
+
+#[derive(Debug)]
+pub enum TelegramBotError {
+    Api(TelegramApiError),
+    HttpClient(ureq::Error),
+    Serialization(io::Error),
 }
 
 pub fn mk_telegram_api_url(bot_token: &String, method_name: &str) -> String {
@@ -56,8 +73,14 @@ pub struct TelegramApiError {
     pub description: String,
 }
 
+impl fmt::Display for TelegramApiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, error code {}", self.description, self.error_code)
+    }
+}
+
 impl<T> TelegramResponse<T> {
-    pub fn into_result(self) -> Result<T,TelegramApiError> {
+    pub fn into_result(self) -> Result<T, TelegramApiError> {
         match self {
             TelegramResponse::Error(err) => Err(err),
             TelegramResponse::Success(resp) => Ok(resp.result),
