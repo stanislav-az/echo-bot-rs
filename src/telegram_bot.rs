@@ -2,7 +2,7 @@ pub mod error;
 pub mod api_types;
 
 pub use error::TelegramBotError;
-use api_types::TelegramResponse;
+use api_types::*;
 
 pub fn one_cycle(bot_token: &String) -> Result<(), TelegramBotError> {
   let resp = ureq::get(&mk_telegram_api_url(bot_token, "getMe"))
@@ -19,8 +19,8 @@ pub fn one_cycle(bot_token: &String) -> Result<(), TelegramBotError> {
       .call()
       .map_err(TelegramBotError::HttpClient)?;
   dbg!(&resp);
-  let json: serde_json::Value = resp
-      .into_json::<TelegramResponse<serde_json::Value>>()
+  let json: TelegramUpdates = resp
+      .into_json::<TelegramResponse<TelegramUpdates>>()
       .map_err(TelegramBotError::Serialization)?
       .into_result()
       .map_err(TelegramBotError::Api)?;

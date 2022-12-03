@@ -19,6 +19,31 @@ pub struct TelegramApiError {
     pub description: String,
 }
 
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TelegramUpdate {
+    pub update_id: u64, // TODO why could not deserialize u128?
+    pub message: Option<TelegramMessage>,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TelegramMessage {
+    pub chat: TelegramChat,
+    pub text: Option<String>,
+    pub sticker: Option<TelegramSticker>,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TelegramChat {
+    pub id: u64,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TelegramSticker {
+    pub file_id: String,
+}
+
+pub type TelegramUpdates = Vec<TelegramUpdate>;
+
 impl fmt::Display for TelegramApiError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}, error code {}", self.description, self.error_code)
