@@ -36,6 +36,20 @@ pub fn send_message(
     parse_response(resp)
 }
 
+pub fn send_sticker(
+    bot_token: &String,
+    chat_id: u64,
+    file_id: String,
+) -> Result<TelegramMessage, TelegramBotError> {
+    let resp = ureq::post(&mk_telegram_api_url(bot_token, "sendSticker"))
+        .send_json(ureq::json!({
+            "chat_id": chat_id,
+            "sticker": file_id
+        }))
+        .map_err(TelegramBotError::HttpClient)?;
+    parse_response(resp)
+}
+
 pub fn handle_update(bot_token: &String, update: TelegramUpdate) -> Result<(), TelegramBotError> {
     let u = Update::new(update);
     match u {
@@ -45,7 +59,9 @@ pub fn handle_update(bot_token: &String, update: TelegramUpdate) -> Result<(), T
             chat_id,
             contents,
         } => match contents {
-            UpdateContents::Sticker { file_id } => Ok(()),
+            UpdateContents::Sticker { file_id } => {
+                send_sticker(bot_token, chat_id, file_id).map(|_| ())
+            }
             UpdateContents::TextMessage { text } => {
                 send_message(bot_token, chat_id, text).map(|_| ())
             }
