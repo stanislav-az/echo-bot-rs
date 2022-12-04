@@ -1,11 +1,12 @@
 use std::io;
+use std::{thread, time};
 
 pub mod config;
 pub mod console_bot;
 pub mod telegram_bot;
-pub use telegram_bot::TelegramBotError;
 use config::StaticBotSettings;
 use console_bot::ConsoleBotState;
+pub use telegram_bot::TelegramBotError;
 
 pub fn run_console_bot(conf: &StaticBotSettings) {
     let mut init_state = ConsoleBotState::new();
@@ -17,5 +18,11 @@ pub fn run_console_bot(conf: &StaticBotSettings) {
 }
 
 pub fn run_telegram_bot(bot_token: &String) -> Result<(), TelegramBotError> {
-    telegram_bot::one_communication_cycle(bot_token)
+    let mut bot_state = None;
+    let delay = time::Duration::from_millis(100);
+
+    loop {
+        telegram_bot::one_communication_cycle(bot_token, &mut bot_state)?;
+        thread::sleep(delay);
+    }
 }

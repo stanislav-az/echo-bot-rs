@@ -3,8 +3,13 @@ use serde::de::DeserializeOwned;
 use super::api_types::{TelegramMessage, TelegramResponse, TelegramUpdates};
 use crate::TelegramBotError;
 
-pub fn get_updates(bot_token: &String) -> Result<TelegramUpdates, TelegramBotError> {
+pub fn get_updates(
+    bot_token: &String,
+    offset: &Option<u64>,
+) -> Result<TelegramUpdates, TelegramBotError> {
+    let offset_str = offset.map_or(String::new(), |o| o.to_string());
     let resp = ureq::get(&mk_telegram_api_url(bot_token, "getUpdates"))
+        .query("offset", &offset_str)
         .call()
         .map_err(TelegramBotError::HttpClient)?;
     parse_response(resp)
