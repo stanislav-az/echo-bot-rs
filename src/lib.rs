@@ -17,5 +17,5 @@ pub fn run_console_bot(conf: &StaticBotSettings) {
 }
 
 pub fn run_telegram_bot(bot_token: &String) -> Result<(), TelegramBotError> {
-    telegram_bot::one_cycle(bot_token)
+    telegram_bot::one_communication_cycle(bot_token)
 }

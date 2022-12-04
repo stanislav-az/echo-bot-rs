@@ -1,10 +1,12 @@
+use serde::de::DeserializeOwned;
+
 pub mod error;
 pub mod api_types;
 
 pub use error::TelegramBotError;
 use api_types::*;
 
-pub fn one_cycle(bot_token: &String) -> Result<(), TelegramBotError> {
+pub fn one_communication_cycle(bot_token: &String) -> Result<(), TelegramBotError> {
   let resp = ureq::get(&mk_telegram_api_url(bot_token, "getMe"))
       .call()
       .map_err(TelegramBotError::HttpClient)?;
@@ -19,11 +21,7 @@ pub fn one_cycle(bot_token: &String) -> Result<(), TelegramBotError> {
       .call()
       .map_err(TelegramBotError::HttpClient)?;
   dbg!(&resp);
-  let json: TelegramUpdates = resp
-      .into_json::<TelegramResponse<TelegramUpdates>>()
-      .map_err(TelegramBotError::Serialization)?
-      .into_result()
-      .map_err(TelegramBotError::Api)?;
+  let json: TelegramUpdates = parse_response(resp)?;
   dbg!(&json);
   Ok(())
 }
@@ -34,4 +32,12 @@ pub fn mk_telegram_api_url(bot_token: &String, method_name: &str) -> String {
   url.push('/');
   url.push_str(method_name);
   url
+}
+
+pub fn parse_response<T: DeserializeOwned> (resp: ureq::Response) -> Result<T,TelegramBotError> {
+  resp
+      .into_json::<TelegramResponse<T>>()
+      .map_err(TelegramBotError::Serialization)?
+      .into_result()
+      .map_err(TelegramBotError::Api)
 }
