@@ -35,7 +35,7 @@ pub fn one_communication_cycle(
     get_updates(bot_token, &offset)?
         .into_iter()
         .try_for_each(|u| {
-            let update_id = handle_update(bot_token, conf, u)?;
+            let update_id = handle_update(bot_token, conf, state, u)?;
             state.last_handled_update_id = Some(update_id);
             Ok(())
         })
@@ -44,6 +44,7 @@ pub fn one_communication_cycle(
 pub fn handle_update(
     bot_token: &String,
     conf: &StaticBotSettings,
+    state: &mut TelegramBotState,
     update: TelegramUpdate,
 ) -> Result<u64, TelegramBotError> {
     let u = Update::new(update);
@@ -77,7 +78,13 @@ pub fn handle_update(
                     })
                     .collect();
                 let keyboard = ureq::json!({ "inline_keyboard": [buttons] });
-                send_keyboard(bot_token, chat_id, &conf.repeat_msg, keyboard)?;
+                let repeat_number = state
+                    .repeat_number_for_chat_id
+                    .get(&chat_id)
+                    .copied()
+                    .unwrap_or(conf.default_repeat_number);
+                let repeat_msg = format!("{}\nCurrent repeat number is {}", conf.repeat_msg, repeat_number);
+                send_keyboard(bot_token, chat_id, &repeat_msg, keyboard)?;
                 Ok(update_id)
             }
         },
