@@ -18,7 +18,11 @@ impl ConsoleBotState {
     }
 }
 
-pub fn respond_to_user(conf: &StaticBotSettings, state: &mut ConsoleBotState, user_input: String) -> String {
+pub fn respond_to_user(
+    conf: &StaticBotSettings,
+    state: &mut ConsoleBotState,
+    user_input: String,
+) -> String {
     if state.is_awaiting_repeat_number {
         let new_repeat = user_input.parse::<u8>();
         let repeat_msg = match new_repeat {
@@ -40,7 +44,7 @@ pub fn respond_to_user(conf: &StaticBotSettings, state: &mut ConsoleBotState, us
     }
     if user_input.trim() == "/repeat" {
         state.tweak_is_awaiting();
-        conf.repeat_msg.clone()
+        mk_repeat_msg(conf, state)
     } else {
         let repeat_number = state
             .custom_repeat_number
@@ -52,6 +56,16 @@ pub fn respond_to_user(conf: &StaticBotSettings, state: &mut ConsoleBotState, us
         }
         repeat_user_input
     }
+}
+
+fn mk_repeat_msg(conf: &StaticBotSettings, state: &ConsoleBotState) -> String {
+    let mut repeat_msg = conf.repeat_msg.clone();
+    let repeat_number = state
+        .custom_repeat_number
+        .unwrap_or(conf.default_repeat_number);
+    repeat_msg.push('\n');
+    repeat_msg.push_str(&format!("Current repeat number is {}", repeat_number));
+    repeat_msg
 }
 
 fn mk_failed_repeat_msg(conf: &StaticBotSettings) -> String {
@@ -96,10 +110,10 @@ mod tests {
     #[test]
     fn should_send_special_repeat_msg() {
         let mut state = ConsoleBotState::new();
-        let repeat_msg = String::from("repeat_msg");
+        let repeat_msg = String::from("repeat_msg\nCurrent repeat number is 1");
         let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
-            repeat_msg: repeat_msg.clone(),
+            repeat_msg: String::from("repeat_msg"),
             default_repeat_number: 1,
         };
         let msg = String::from("/repeat");
