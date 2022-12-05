@@ -16,6 +16,8 @@ pub enum Update {
 pub enum UpdateContents {
     TextMessage { text: String },
     Sticker { file_id: String },
+    HelpCommand,
+    RepeatCommand,
 }
 
 impl Update {
@@ -25,17 +27,37 @@ impl Update {
                 update_id: u.update_id,
             },
             Some(msg) => match (msg.text, msg.sticker) {
-                (Some(t), None) => Update::Message {
-                    update_id: u.update_id,
-                    chat_id: msg.chat.id,
-                    contents: UpdateContents::TextMessage { text: t },
-                },
+                (Some(t), None) => {
+                    if t == String::from("/help") {
+                        return Update::Message {
+                            update_id: u.update_id,
+                            chat_id: msg.chat.id,
+                            contents: UpdateContents::HelpCommand,
+                        };
+                    }
+                    if t == String::from("/repeat") {
+                        return Update::Message {
+                            update_id: u.update_id,
+                            chat_id: msg.chat.id,
+                            contents: UpdateContents::RepeatCommand,
+                        };
+                    } else {
+                        return Update::Message {
+                            update_id: u.update_id,
+                            chat_id: msg.chat.id,
+                            contents: UpdateContents::TextMessage { text: t },
+                        };
+                    }
+                }
+
                 (None, Some(s)) => Update::Message {
                     update_id: u.update_id,
                     chat_id: msg.chat.id,
                     contents: UpdateContents::Sticker { file_id: s.file_id },
                 },
-                _ => Update::Ignored { update_id: u.update_id },
+                _ => Update::Ignored {
+                    update_id: u.update_id,
+                },
             },
         }
     }

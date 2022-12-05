@@ -18,7 +18,7 @@ pub fn get_updates(
 pub fn send_message(
     bot_token: &String,
     chat_id: u64,
-    text: String,
+    text: &str,
 ) -> Result<TelegramMessage, TelegramBotError> {
     let resp = ureq::post(&mk_telegram_api_url(bot_token, "sendMessage"))
         .send_json(ureq::json!({

@@ -17,12 +17,12 @@ pub fn run_console_bot(conf: &StaticBotSettings) {
     });
 }
 
-pub fn run_telegram_bot(bot_token: &String) -> Result<(), TelegramBotError> {
+pub fn run_telegram_bot(bot_token: &String, conf: &StaticBotSettings) -> Result<(), TelegramBotError> {
     let mut bot_state = None;
     let delay = time::Duration::from_millis(100);
 
     loop {
-        telegram_bot::one_communication_cycle(bot_token, &mut bot_state)?;
+        telegram_bot::one_communication_cycle(bot_token, conf, &mut bot_state)?;
         thread::sleep(delay);
     }
 }
