@@ -5,7 +5,12 @@ pub enum Update {
     Message {
         update_id: u64,
         chat_id: u64,
-        contents: UpdateContents,
+        contents: MessageContents,
+    },
+    CallbackQuery {
+        update_id: u64,
+        chat_id: u64,
+        data: String,
     },
     Ignored {
         update_id: u64,
@@ -13,7 +18,7 @@ pub enum Update {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum UpdateContents {
+pub enum MessageContents {
     TextMessage { text: String },
     Sticker { file_id: String },
     HelpCommand,
@@ -22,30 +27,27 @@ pub enum UpdateContents {
 
 impl Update {
     pub fn new(u: TelegramUpdate) -> Update {
-        match u.message {
-            None => Update::Ignored {
-                update_id: u.update_id,
-            },
-            Some(msg) => match (msg.text, msg.sticker) {
+        match (u.message, u.callback_query) {
+            (Some(msg), None) => match (msg.text, msg.sticker) {
                 (Some(t), None) => {
                     if t == String::from("/help") {
                         return Update::Message {
                             update_id: u.update_id,
                             chat_id: msg.chat.id,
-                            contents: UpdateContents::HelpCommand,
+                            contents: MessageContents::HelpCommand,
                         };
                     }
                     if t == String::from("/repeat") {
                         return Update::Message {
                             update_id: u.update_id,
                             chat_id: msg.chat.id,
-                            contents: UpdateContents::RepeatCommand,
+                            contents: MessageContents::RepeatCommand,
                         };
                     } else {
                         return Update::Message {
                             update_id: u.update_id,
                             chat_id: msg.chat.id,
-                            contents: UpdateContents::TextMessage { text: t },
+                            contents: MessageContents::TextMessage { text: t },
                         };
                     }
                 }
@@ -53,11 +55,24 @@ impl Update {
                 (None, Some(s)) => Update::Message {
                     update_id: u.update_id,
                     chat_id: msg.chat.id,
-                    contents: UpdateContents::Sticker { file_id: s.file_id },
+                    contents: MessageContents::Sticker { file_id: s.file_id },
                 },
                 _ => Update::Ignored {
                     update_id: u.update_id,
                 },
+            },
+            (None, Some(query)) => match (query.data, query.message) {
+                (Some(d), Some(m)) => Update::CallbackQuery {
+                    update_id: u.update_id,
+                    chat_id: m.chat.id,
+                    data: d,
+                },
+                _ => Update::Ignored {
+                    update_id: u.update_id,
+                },
+            },
+            _ => Update::Ignored {
+                update_id: u.update_id,
             },
         }
     }

@@ -50,24 +50,25 @@ pub fn handle_update(
     let u = Update::new(update);
     match u {
         Update::Ignored { update_id } => Ok(update_id),
+        Update::CallbackQuery { update_id, chat_id, data } => Ok(update_id),
         Update::Message {
             update_id,
             chat_id,
             contents,
         } => match contents {
-            UpdateContents::Sticker { file_id } => {
+            MessageContents::Sticker { file_id } => {
                 send_sticker(bot_token, chat_id, file_id)?;
                 Ok(update_id)
             }
-            UpdateContents::TextMessage { text } => {
+            MessageContents::TextMessage { text } => {
                 send_message(bot_token, chat_id, &text)?;
                 Ok(update_id)
             }
-            UpdateContents::HelpCommand => {
+            MessageContents::HelpCommand => {
                 send_message(bot_token, chat_id, &conf.help_msg)?;
                 Ok(update_id)
             }
-            UpdateContents::RepeatCommand => {
+            MessageContents::RepeatCommand => {
                 let buttons: Vec<serde_json::Value> = vec![1, 2, 3, 4, 5]
                     .into_iter()
                     .map(|n| {

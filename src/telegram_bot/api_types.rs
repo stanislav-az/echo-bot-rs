@@ -23,6 +23,7 @@ pub struct TelegramApiError {
 pub struct TelegramUpdate {
     pub update_id: u64, // TODO why could not deserialize u128?
     pub message: Option<TelegramMessage>,
+    pub callback_query: Option<TelegramCallbackQuery>,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -30,6 +31,12 @@ pub struct TelegramMessage {
     pub chat: TelegramChat,
     pub text: Option<String>,
     pub sticker: Option<TelegramSticker>,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TelegramCallbackQuery {
+    pub message: Option<TelegramMessage>,
+    pub data: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
