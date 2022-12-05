@@ -50,7 +50,17 @@ pub fn handle_update(
     let u = Update::new(update);
     match u {
         Update::Ignored { update_id } => Ok(update_id),
-        Update::CallbackQuery { update_id, chat_id, data } => Ok(update_id),
+        Update::CallbackQuery {
+            update_id,
+            chat_id,
+            data,
+        } => {
+            let chosen_repeat = data.parse::<u8>().map_err(TelegramBotError::Parsing)?;
+            state
+                .repeat_number_for_chat_id
+                .insert(chat_id, chosen_repeat);
+            Ok(update_id)
+        }
         Update::Message {
             update_id,
             chat_id,
@@ -84,7 +94,10 @@ pub fn handle_update(
                     .get(&chat_id)
                     .copied()
                     .unwrap_or(conf.default_repeat_number);
-                let repeat_msg = format!("{}\nCurrent repeat number is {}", conf.repeat_msg, repeat_number);
+                let repeat_msg = format!(
+                    "{}\nCurrent repeat number is {}",
+                    conf.repeat_msg, repeat_number
+                );
                 send_keyboard(bot_token, chat_id, &repeat_msg, keyboard)?;
                 Ok(update_id)
             }

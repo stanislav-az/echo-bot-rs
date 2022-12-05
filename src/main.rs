@@ -34,6 +34,9 @@ Or --config param",
                         TelegramBotError::Serialization(e) => {
                             eprintln!("Could not (de)serialize:\n  {}", e)
                         }
+                        TelegramBotError::Parsing(e) => {
+                            eprintln!("Could not parse data:\n  {}", e)
+                        }
                     }
                     process::exit(1);
                 },
