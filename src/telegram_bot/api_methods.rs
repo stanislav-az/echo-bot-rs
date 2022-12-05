@@ -23,7 +23,23 @@ pub fn send_message(
     let resp = ureq::post(&mk_telegram_api_url(bot_token, "sendMessage"))
         .send_json(ureq::json!({
             "chat_id": chat_id,
-            "text": text
+            "text": text,
+        }))
+        .map_err(TelegramBotError::HttpClient)?;
+    parse_response(resp)
+}
+
+pub fn send_keyboard(
+    bot_token: &String,
+    chat_id: u64,
+    text: &str,
+    keyboard: serde_json::Value,
+) -> Result<TelegramMessage, TelegramBotError> {
+    let resp = ureq::post(&mk_telegram_api_url(bot_token, "sendMessage"))
+        .send_json(ureq::json!({
+            "chat_id": chat_id,
+            "text": text,
+            "reply_markup": keyboard
         }))
         .map_err(TelegramBotError::HttpClient)?;
     parse_response(resp)

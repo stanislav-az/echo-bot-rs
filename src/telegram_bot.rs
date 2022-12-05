@@ -5,7 +5,7 @@ pub mod error;
 
 use std::collections::HashMap;
 
-use self::api_methods::{get_updates, send_message, send_sticker};
+use self::api_methods::{get_updates, send_keyboard, send_message, send_sticker};
 use crate::config::StaticBotSettings;
 use api_types::*;
 use domain_types::*;
@@ -67,7 +67,17 @@ pub fn handle_update(
                 Ok(update_id)
             }
             UpdateContents::RepeatCommand => {
-                send_message(bot_token, chat_id, &conf.repeat_msg)?;
+                let buttons: Vec<serde_json::Value> = vec![1, 2, 3, 4, 5]
+                    .into_iter()
+                    .map(|n| {
+                        ureq::json!({
+                            "text": format!("{n}"),
+                            "callback_data": format!("{n}"),
+                        })
+                    })
+                    .collect();
+                let keyboard = ureq::json!({ "inline_keyboard": [buttons] });
+                send_keyboard(bot_token, chat_id, &conf.repeat_msg, keyboard)?;
                 Ok(update_id)
             }
         },
