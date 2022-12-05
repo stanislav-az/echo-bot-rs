@@ -7,6 +7,7 @@ pub mod telegram_bot;
 use config::StaticBotSettings;
 use console_bot::ConsoleBotState;
 pub use telegram_bot::TelegramBotError;
+use telegram_bot::TelegramBotState;
 
 pub fn run_console_bot(conf: &StaticBotSettings) {
     let mut init_state = ConsoleBotState::new();
@@ -18,7 +19,7 @@ pub fn run_console_bot(conf: &StaticBotSettings) {
 }
 
 pub fn run_telegram_bot(bot_token: &String, conf: &StaticBotSettings) -> Result<(), TelegramBotError> {
-    let mut bot_state = None;
+    let mut bot_state = TelegramBotState::new();
     let delay = time::Duration::from_millis(100);
 
     loop {
