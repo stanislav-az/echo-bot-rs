@@ -35,6 +35,7 @@ pub struct TelegramMessage {
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TelegramCallbackQuery {
+    pub id: String,
     pub message: Option<TelegramMessage>,
     pub data: Option<String>,
 }

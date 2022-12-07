@@ -8,6 +8,7 @@ pub enum Update {
         contents: MessageContents,
     },
     CallbackQuery {
+        query_id: String,
         update_id: u64,
         chat_id: u64,
         data: String,
@@ -63,6 +64,7 @@ impl Update {
             },
             (None, Some(query)) => match (query.data, query.message) {
                 (Some(d), Some(m)) => Update::CallbackQuery {
+                    query_id: query.id,
                     update_id: u.update_id,
                     chat_id: m.chat.id,
                     data: d,

@@ -5,7 +5,9 @@ pub mod error;
 
 use std::collections::HashMap;
 
-use self::api_methods::{get_updates, send_keyboard, send_message, send_sticker};
+use self::api_methods::{
+    answer_callback_query, get_updates, send_keyboard, send_message, send_sticker,
+};
 use crate::config::StaticBotSettings;
 use api_types::*;
 use domain_types::*;
@@ -51,6 +53,7 @@ pub fn handle_update(
     match u {
         Update::Ignored { update_id } => Ok(update_id),
         Update::CallbackQuery {
+            query_id,
             update_id,
             chat_id,
             data,
@@ -59,7 +62,11 @@ pub fn handle_update(
             state
                 .repeat_number_for_chat_id
                 .insert(chat_id, chosen_repeat);
-            // todo respond to telegram api
+            answer_callback_query(
+                bot_token,
+                &query_id,
+                &format!("Number of repeats was changed to {}", chosen_repeat),
+            )?;
             Ok(update_id)
         }
         Update::Message {

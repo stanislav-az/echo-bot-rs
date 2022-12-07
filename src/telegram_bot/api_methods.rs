@@ -59,6 +59,20 @@ pub fn send_sticker(
     parse_response(resp)
 }
 
+pub fn answer_callback_query(
+    bot_token: &String,
+    query_id: &String,
+    text: &str,
+) -> Result<bool, TelegramBotError> {
+    let resp = ureq::post(&mk_telegram_api_url(bot_token, "answerCallbackQuery"))
+        .send_json(ureq::json!({
+            "callback_query_id": query_id,
+            "text": text,
+        }))
+        .map_err(TelegramBotError::HttpClient)?;
+    parse_response(resp)
+}
+
 pub fn mk_telegram_api_url(bot_token: &String, method_name: &str) -> String {
     let mut url = String::from("https://api.telegram.org/bot");
     url.push_str(bot_token);
