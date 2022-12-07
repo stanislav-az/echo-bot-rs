@@ -59,6 +59,7 @@ pub fn handle_update(
             state
                 .repeat_number_for_chat_id
                 .insert(chat_id, chosen_repeat);
+            // todo respond to telegram api
             Ok(update_id)
         }
         Update::Message {
@@ -67,11 +68,25 @@ pub fn handle_update(
             contents,
         } => match contents {
             MessageContents::Sticker { file_id } => {
-                send_sticker(bot_token, chat_id, file_id)?;
+                let repeat_number = state
+                    .repeat_number_for_chat_id
+                    .get(&chat_id)
+                    .copied()
+                    .unwrap_or(conf.default_repeat_number);
+                for _ in 0..repeat_number {
+                    send_sticker(bot_token, chat_id, &file_id)?;
+                }
                 Ok(update_id)
             }
             MessageContents::TextMessage { text } => {
-                send_message(bot_token, chat_id, &text)?;
+                let repeat_number = state
+                    .repeat_number_for_chat_id
+                    .get(&chat_id)
+                    .copied()
+                    .unwrap_or(conf.default_repeat_number);
+                for _ in 0..repeat_number {
+                    send_message(bot_token, chat_id, &text)?;
+                }
                 Ok(update_id)
             }
             MessageContents::HelpCommand => {

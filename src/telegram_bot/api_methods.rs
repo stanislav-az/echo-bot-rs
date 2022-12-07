@@ -48,7 +48,7 @@ pub fn send_keyboard(
 pub fn send_sticker(
     bot_token: &String,
     chat_id: u64,
-    file_id: String,
+    file_id: &String,
 ) -> Result<TelegramMessage, TelegramBotError> {
     let resp = ureq::post(&mk_telegram_api_url(bot_token, "sendSticker"))
         .send_json(ureq::json!({
