@@ -1,3 +1,4 @@
+pub mod api_client;
 pub mod api_methods;
 pub mod api_types;
 pub mod domain_types;
@@ -5,9 +6,7 @@ pub mod error;
 
 use std::collections::HashMap;
 
-use self::api_methods::{
-    answer_callback_query, get_updates, send_keyboard, send_message, send_sticker,
-};
+use self::api_client::TelegramApiClient;
 use crate::config::StaticBotSettings;
 use api_types::*;
 use domain_types::*;
@@ -31,13 +30,15 @@ impl TelegramBotState {
 pub fn one_communication_cycle(
     bot_token: &String,
     conf: &StaticBotSettings,
+    client: &impl TelegramApiClient,
     state: &mut TelegramBotState,
 ) -> Result<(), TelegramBotError> {
     let offset = state.last_handled_update_id.map(|o| o + 1);
-    get_updates(bot_token, &offset)?
+    client
+        .get_updates(bot_token, &offset)?
         .into_iter()
         .try_for_each(|u| {
-            let update_id = handle_update(bot_token, conf, state, u)?;
+            let update_id = handle_update(bot_token, conf, client, state, u)?;
             state.last_handled_update_id = Some(update_id);
             Ok(())
         })
@@ -46,6 +47,7 @@ pub fn one_communication_cycle(
 pub fn handle_update(
     bot_token: &String,
     conf: &StaticBotSettings,
+    client: &impl TelegramApiClient,
     state: &mut TelegramBotState,
     update: TelegramUpdate,
 ) -> Result<u64, TelegramBotError> {
@@ -62,7 +64,7 @@ pub fn handle_update(
             state
                 .repeat_number_for_chat_id
                 .insert(chat_id, chosen_repeat);
-            answer_callback_query(
+            client.answer_callback_query(
                 bot_token,
                 &query_id,
                 &format!("Number of repeats was changed to {}", chosen_repeat),
@@ -81,7 +83,7 @@ pub fn handle_update(
                     .copied()
                     .unwrap_or(conf.default_repeat_number);
                 for _ in 0..repeat_number {
-                    send_sticker(bot_token, chat_id, &file_id)?;
+                    client.send_sticker(bot_token, chat_id, &file_id)?;
                 }
                 Ok(update_id)
             }
@@ -92,12 +94,12 @@ pub fn handle_update(
                     .copied()
                     .unwrap_or(conf.default_repeat_number);
                 for _ in 0..repeat_number {
-                    send_message(bot_token, chat_id, &text)?;
+                    client.send_message(bot_token, chat_id, &text)?;
                 }
                 Ok(update_id)
             }
             MessageContents::HelpCommand => {
-                send_message(bot_token, chat_id, &conf.help_msg)?;
+                client.send_message(bot_token, chat_id, &conf.help_msg)?;
                 Ok(update_id)
             }
             MessageContents::RepeatCommand => {
@@ -120,7 +122,7 @@ pub fn handle_update(
                     "{}\nCurrent repeat number is {}",
                     conf.repeat_msg, repeat_number
                 );
-                send_keyboard(bot_token, chat_id, &repeat_msg, keyboard)?;
+                client.send_keyboard(bot_token, chat_id, &repeat_msg, keyboard)?;
                 Ok(update_id)
             }
         },
