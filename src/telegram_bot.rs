@@ -410,4 +410,52 @@ mod tests {
         assert_eq!(client.sent_messages.borrow().clone(), vec![msg]);
         Ok(())
     }
+
+    #[test]
+    fn should_change_repeat_number() -> Result<(), TelegramBotError> {
+        let mut state = TelegramBotState::new();
+        let conf = StaticBotSettings {
+            help_msg: String::from("help_msg"),
+            repeat_msg: String::from("repeat_msg"),
+            default_repeat_number: 1,
+        };
+        let chat_id = 1;
+        let msg_text = String::from("/repeat");
+        let updates = vec![TelegramUpdate {
+            update_id: 1,
+            message: Some(TelegramMessage {
+                chat: TelegramChat { id: chat_id },
+                text: Some(msg_text.clone()),
+                sticker: None,
+            }),
+            callback_query: None,
+        }];
+        let client = MockClient::new(updates);
+        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        let query_id = String::from("789asdf");
+        let updates = vec![TelegramUpdate {
+            update_id: 2,
+            message: None,
+            callback_query: Some(TelegramCallbackQuery {
+                id: query_id.clone(),
+                message: Some(TelegramMessage {
+                    chat: TelegramChat { id: chat_id },
+                    text: Some(String::from("repeat_msg\nCurrent repeat number is 1")),
+                    sticker: None,
+                }),
+                data: Some(String::from("2")),
+            }),
+        }];
+        let client = MockClient::new(updates);
+        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        let callback_answer = CallbackAnswer {
+            query_id,
+            text: String::from("Number of repeats was changed to 2"),
+        };
+        assert_eq!(
+            client.sent_callback_answers.borrow().clone(),
+            vec![callback_answer]
+        );
+        Ok(())
+    }
 }
