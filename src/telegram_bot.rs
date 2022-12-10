@@ -331,10 +331,7 @@ mod tests {
         }];
         let first_client = MockClient::new(updates);
         one_communication_cycle(&String::new(), &conf, &first_client, &mut state)?;
-        assert_eq!(
-            first_client.sent_offsets.borrow().clone(),
-            vec![None]
-        );
+        assert_eq!(first_client.sent_offsets.borrow().clone(), vec![None]);
         let updates = vec![TelegramUpdate {
             update_id: first_update_id + 1,
             message: Some(TelegramMessage {
@@ -351,6 +348,66 @@ mod tests {
             second_client.sent_offsets.borrow().clone(),
             vec![correct_offset]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn should_send_special_help_msg() -> Result<(), TelegramBotError> {
+        let mut state = TelegramBotState::new();
+        let help_msg = String::from("help_msg");
+        let conf = StaticBotSettings {
+            help_msg: help_msg.clone(),
+            repeat_msg: String::from("repeat_msg"),
+            default_repeat_number: 1,
+        };
+        let chat_id = 1;
+        let msg_text = String::from("/help");
+        let updates = vec![TelegramUpdate {
+            update_id: 1,
+            message: Some(TelegramMessage {
+                chat: TelegramChat { id: chat_id },
+                text: Some(msg_text.clone()),
+                sticker: None,
+            }),
+            callback_query: None,
+        }];
+        let msg = Message {
+            chat_id,
+            text: help_msg.clone(),
+        };
+        let client = MockClient::new(updates);
+        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        assert_eq!(client.sent_messages.borrow().clone(), vec![msg]);
+        Ok(())
+    }
+
+    #[test]
+    fn should_send_special_repeat_msg() -> Result<(), TelegramBotError> {
+        let mut state = TelegramBotState::new();
+        let repeat_msg = String::from("repeat_msg\nCurrent repeat number is 1");
+        let conf = StaticBotSettings {
+            help_msg: String::from("help_msg"),
+            repeat_msg: String::from("repeat_msg"),
+            default_repeat_number: 1,
+        };
+        let chat_id = 1;
+        let msg_text = String::from("/repeat");
+        let updates = vec![TelegramUpdate {
+            update_id: 1,
+            message: Some(TelegramMessage {
+                chat: TelegramChat { id: chat_id },
+                text: Some(msg_text.clone()),
+                sticker: None,
+            }),
+            callback_query: None,
+        }];
+        let msg = Message {
+            chat_id,
+            text: repeat_msg.clone(),
+        };
+        let client = MockClient::new(updates);
+        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        assert_eq!(client.sent_messages.borrow().clone(), vec![msg]);
         Ok(())
     }
 }
