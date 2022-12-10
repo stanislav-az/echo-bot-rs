@@ -128,3 +128,111 @@ pub fn handle_update(
         },
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+
+    use super::*;
+
+    #[derive(Debug, PartialEq, Eq)]
+    struct Message {
+        chat_id: u64,
+        text: String,
+    }
+    #[derive(Debug, PartialEq, Eq)]
+    struct Sticker {
+        chat_id: u64,
+        file_id: String,
+    }
+    #[derive(Debug, PartialEq, Eq)]
+    struct CallbackAnswer {
+        query_id: String,
+        text: String,
+    }
+
+    struct MockClient {
+        updates_to_receive: TelegramUpdates,
+        sent_messages: RefCell<Vec<Message>>,
+        sent_stickers: RefCell<Vec<Sticker>>,
+        sent_callback_answers: RefCell<Vec<CallbackAnswer>>,
+    }
+
+    impl TelegramApiClient for MockClient {
+        fn get_updates(
+            &self,
+            _bot_token: &String,
+            offset: &Option<u64>,
+        ) -> Result<TelegramUpdates, TelegramBotError> {
+            let resp = self.updates_to_receive.clone();
+            Ok(resp)
+        }
+        fn send_message(
+            &self,
+            _bot_token: &String,
+            chat_id: u64,
+            text: &str,
+        ) -> Result<TelegramMessage, TelegramBotError> {
+            let msg = Message {
+                chat_id,
+                text: text.to_string(),
+            };
+            self.sent_messages.borrow_mut().push(msg);
+            Ok(TelegramMessage {
+                chat: TelegramChat { id: chat_id },
+                text: Some(String::from(text)),
+                sticker: None,
+            })
+        }
+        fn send_keyboard(
+            &self,
+            _bot_token: &String,
+            chat_id: u64,
+            text: &str,
+            _keyboard: serde_json::Value,
+        ) -> Result<TelegramMessage, TelegramBotError> {
+            let msg = Message {
+                chat_id,
+                text: text.to_string(),
+            };
+            self.sent_messages.borrow_mut().push(msg);
+            Ok(TelegramMessage {
+                chat: TelegramChat { id: chat_id },
+                text: Some(String::from(text)),
+                sticker: None,
+            })
+        }
+        fn send_sticker(
+            &self,
+            _bot_token: &String,
+            chat_id: u64,
+            file_id: &String,
+        ) -> Result<TelegramMessage, TelegramBotError> {
+            let sticker = Sticker {
+                file_id: file_id.clone(),
+                chat_id,
+            };
+            self.sent_stickers.borrow_mut().push(sticker);
+            Ok(TelegramMessage {
+                chat: TelegramChat { id: chat_id },
+                text: None,
+                sticker: Some(TelegramSticker {
+                    file_id: file_id.clone(),
+                }),
+            })
+        }
+        fn answer_callback_query(
+            &self,
+            _bot_token: &String,
+            query_id: &String,
+            text: &str,
+        ) -> Result<bool, TelegramBotError> {
+            let answer = CallbackAnswer {
+                query_id: query_id.clone(),
+                text: text.to_string(),
+            };
+            self.sent_callback_answers.borrow_mut().push(answer);
+            Ok(true)
+        }
+    }
+}

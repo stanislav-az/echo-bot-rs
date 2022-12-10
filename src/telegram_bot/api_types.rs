@@ -19,33 +19,33 @@ pub struct TelegramApiError {
     pub description: String,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct TelegramUpdate {
     pub update_id: u64, // TODO why could not deserialize u128?
     pub message: Option<TelegramMessage>,
     pub callback_query: Option<TelegramCallbackQuery>,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct TelegramMessage {
     pub chat: TelegramChat,
     pub text: Option<String>,
     pub sticker: Option<TelegramSticker>,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct TelegramCallbackQuery {
     pub id: String,
     pub message: Option<TelegramMessage>,
     pub data: Option<String>,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct TelegramChat {
     pub id: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct TelegramSticker {
     pub file_id: String,
 }
