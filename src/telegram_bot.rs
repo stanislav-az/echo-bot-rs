@@ -153,6 +153,7 @@ mod tests {
 
     struct MockClient {
         updates_to_receive: TelegramUpdates,
+        sent_offsets: RefCell<Vec<Option<u64>>>,
         sent_messages: RefCell<Vec<Message>>,
         sent_stickers: RefCell<Vec<Sticker>>,
         sent_callback_answers: RefCell<Vec<CallbackAnswer>>,
@@ -162,6 +163,7 @@ mod tests {
         fn new(updates_to_receive: TelegramUpdates) -> Self {
             MockClient {
                 updates_to_receive,
+                sent_offsets: RefCell::new(vec![]),
                 sent_messages: RefCell::new(vec![]),
                 sent_stickers: RefCell::new(vec![]),
                 sent_callback_answers: RefCell::new(vec![]),
@@ -176,6 +178,7 @@ mod tests {
             offset: &Option<u64>,
         ) -> Result<TelegramUpdates, TelegramBotError> {
             let resp = self.updates_to_receive.clone();
+            self.sent_offsets.borrow_mut().push(offset.clone());
             Ok(resp)
         }
         fn send_message(
@@ -248,7 +251,7 @@ mod tests {
     }
 
     #[test]
-    fn should_repeat_user_messages() -> Result<(), TelegramBotError> {
+    fn should_repeat_user_text_messages() -> Result<(), TelegramBotError> {
         let mut state = TelegramBotState::new();
         let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
@@ -273,6 +276,81 @@ mod tests {
         let client = MockClient::new(updates);
         one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
         assert_eq!(client.sent_messages.borrow().clone(), vec![msg]);
+        Ok(())
+    }
+
+    #[test]
+    fn should_repeat_user_sticker_messages() -> Result<(), TelegramBotError> {
+        let mut state = TelegramBotState::new();
+        let conf = StaticBotSettings {
+            help_msg: String::from("help_msg"),
+            repeat_msg: String::from("repeat_msg"),
+            default_repeat_number: 1,
+        };
+        let chat_id = 1;
+        let sticker_id = String::from("abcde123");
+        let updates = vec![TelegramUpdate {
+            update_id: 1,
+            message: Some(TelegramMessage {
+                chat: TelegramChat { id: chat_id },
+                text: None,
+                sticker: Some(TelegramSticker {
+                    file_id: sticker_id.clone(),
+                }),
+            }),
+            callback_query: None,
+        }];
+        let msg = Sticker {
+            chat_id,
+            file_id: sticker_id.clone(),
+        };
+        let client = MockClient::new(updates);
+        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        assert_eq!(client.sent_stickers.borrow().clone(), vec![msg]);
+        Ok(())
+    }
+
+    #[test]
+    fn should_query_next_updates_with_offset() -> Result<(), TelegramBotError> {
+        let mut state = TelegramBotState::new();
+        let conf = StaticBotSettings {
+            help_msg: String::from("help_msg"),
+            repeat_msg: String::from("repeat_msg"),
+            default_repeat_number: 1,
+        };
+        let chat_id = 1;
+        let first_update_id = 1234;
+        let updates = vec![TelegramUpdate {
+            update_id: first_update_id,
+            message: Some(TelegramMessage {
+                chat: TelegramChat { id: chat_id },
+                text: Some(String::from("hi!")),
+                sticker: None,
+            }),
+            callback_query: None,
+        }];
+        let first_client = MockClient::new(updates);
+        one_communication_cycle(&String::new(), &conf, &first_client, &mut state)?;
+        assert_eq!(
+            first_client.sent_offsets.borrow().clone(),
+            vec![None]
+        );
+        let updates = vec![TelegramUpdate {
+            update_id: first_update_id + 1,
+            message: Some(TelegramMessage {
+                chat: TelegramChat { id: chat_id },
+                text: Some(String::from("what's up?")),
+                sticker: None,
+            }),
+            callback_query: None,
+        }];
+        let second_client = MockClient::new(updates);
+        one_communication_cycle(&String::new(), &conf, &second_client, &mut state)?;
+        let correct_offset = Some(first_update_id + 1);
+        assert_eq!(
+            second_client.sent_offsets.borrow().clone(),
+            vec![correct_offset]
+        );
         Ok(())
     }
 }
