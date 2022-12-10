@@ -135,17 +135,17 @@ mod tests {
 
     use super::*;
 
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, Clone)]
     struct Message {
         chat_id: u64,
         text: String,
     }
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, Clone)]
     struct Sticker {
         chat_id: u64,
         file_id: String,
     }
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, Clone)]
     struct CallbackAnswer {
         query_id: String,
         text: String,
@@ -156,6 +156,17 @@ mod tests {
         sent_messages: RefCell<Vec<Message>>,
         sent_stickers: RefCell<Vec<Sticker>>,
         sent_callback_answers: RefCell<Vec<CallbackAnswer>>,
+    }
+
+    impl MockClient {
+        fn new(updates_to_receive: TelegramUpdates) -> Self {
+            MockClient {
+                updates_to_receive,
+                sent_messages: RefCell::new(vec![]),
+                sent_stickers: RefCell::new(vec![]),
+                sent_callback_answers: RefCell::new(vec![]),
+            }
+        }
     }
 
     impl TelegramApiClient for MockClient {
@@ -234,5 +245,34 @@ mod tests {
             self.sent_callback_answers.borrow_mut().push(answer);
             Ok(true)
         }
+    }
+
+    #[test]
+    fn should_repeat_user_messages() -> Result<(), TelegramBotError> {
+        let mut state = TelegramBotState::new();
+        let conf = StaticBotSettings {
+            help_msg: String::from("help_msg"),
+            repeat_msg: String::from("repeat_msg"),
+            default_repeat_number: 1,
+        };
+        let chat_id = 1;
+        let msg_text = String::from("hi!");
+        let updates = vec![TelegramUpdate {
+            update_id: 1,
+            message: Some(TelegramMessage {
+                chat: TelegramChat { id: chat_id },
+                text: Some(msg_text.clone()),
+                sticker: None,
+            }),
+            callback_query: None,
+        }];
+        let msg = Message {
+            chat_id,
+            text: msg_text.clone(),
+        };
+        let client = MockClient::new(updates);
+        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        assert_eq!(client.sent_messages.borrow().clone(), vec![msg]);
+        Ok(())
     }
 }
