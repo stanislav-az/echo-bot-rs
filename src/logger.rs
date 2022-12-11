@@ -1,3 +1,5 @@
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Write;
 
@@ -6,6 +8,21 @@ use crate::config::LoggerSettings;
 pub struct Logger {
     log_to_file: Option<File>,
     log_to_stderr: bool,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LoggerMsg {
+    pub text: String,
+    pub timestamp: DateTime<Utc>,
+    pub level: LogLevel,
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum LogLevel {
+    Debug,
+    Info,
+    Warn,
+    Error,
 }
 
 impl Logger {
@@ -26,12 +43,20 @@ impl Logger {
         }
     }
 
-    pub fn log(&mut self, msg: String) {
-        if self.log_to_stderr {
-            eprintln!("{}", &msg);
-        }
-        if let Some(file) = &mut self.log_to_file {
-            writeln!(file, "{}", &msg).expect("Could not append to log file");
+    pub fn log(&mut self, level: LogLevel, msg_text: String) {
+        if self.log_to_stderr || self.log_to_file.is_some() {
+            let msg = LoggerMsg {
+                text: msg_text,
+                level,
+                timestamp: Utc::now(),
+            };
+            let json = serde_json::to_string(&msg).expect("Could not serialize log message");
+            if self.log_to_stderr {
+                eprintln!("{}", &json);
+            }
+            if let Some(file) = &mut self.log_to_file {
+                writeln!(file, "{}", &json).expect("Could not append to log file");
+            }
         }
     }
 }

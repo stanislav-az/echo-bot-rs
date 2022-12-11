@@ -1,5 +1,6 @@
 use echo_bot_rs::config::BotToRun;
 use echo_bot_rs::config::Config;
+use echo_bot_rs::logger::LogLevel;
 use echo_bot_rs::logger::Logger;
 use echo_bot_rs::run_console_bot;
 use echo_bot_rs::run_telegram_bot;
@@ -24,7 +25,7 @@ Or --config param",
 
     let mut logger = Logger::initialize(&config.logger_settings);
 
-    logger.log("msg".to_string());
+    logger.log(LogLevel::Debug, "Started logger".to_string());
 
     match config.bot_to_run {
         BotToRun::Console => run_console_bot(&config.static_bot_options),
