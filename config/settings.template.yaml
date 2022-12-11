@@ -7,3 +7,11 @@ static_bot_options:
   default_repeat_number: 1
 
 telegram_bot_token: "000000000:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+logger_settings:
+  log_to_stderr: false
+  # Optional parameter: "file_path" || null
+  log_to_file: "logs/bot.log"
+  # Log every message, starting from this log level
+  # Supported levels are: Debug < Info < Warn < Error
+  log_level_starting_from: Info

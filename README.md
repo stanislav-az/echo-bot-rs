@@ -12,9 +12,9 @@ A user can send a command which will print a configurable help message. The comm
 
 A user can send a command which will print a configurable repeat message. In Telegram on `</repeat>` command he will see a buttonpad with numbers from 1 to 5. In Console on  `</repeat>` command he needs to enter an integer, which is greater than zero.
 
-## :ledger: Logging (*TODO*)
+## :ledger: Logging
 
-Supported levels of logging: DEBUG, INFO, WARN, ERROR, the default log file is `<./log/bot.log>`. All sent messages and repeat number changes are logged on debug level.
+Logger is single threaded. Supported levels of logging: DEBUG, INFO, WARN, ERROR, the default log file is `<./log/bot.log>`. All sent messages and repeat number changes are logged on debug level.
 
 ## :wrench: Configurability
 

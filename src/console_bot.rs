@@ -1,3 +1,5 @@
+use crate::logger::Logger;
+
 use super::config::StaticBotSettings;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -19,10 +21,15 @@ impl ConsoleBotState {
 }
 
 pub fn respond_to_user(
+    logger: &mut Logger,
     conf: &StaticBotSettings,
     state: &mut ConsoleBotState,
     user_input: String,
 ) -> String {
+    logger.log_debug(&format!(
+        "Console bot responding to user input of: {}",
+        &user_input
+    ));
     if state.is_awaiting_repeat_number {
         let new_repeat = user_input.parse::<u8>();
         let repeat_msg = match new_repeat {
@@ -30,12 +37,20 @@ pub fn respond_to_user(
                 if n > 0 {
                     state.custom_repeat_number = Some(n);
                     state.tweak_is_awaiting();
-                    format!("Repeat number changed to: {}", n)
+                    let resp = format!("Repeat number changed to: {}", n);
+                    logger.log_info(&resp);
+                    resp
                 } else {
-                    mk_failed_repeat_msg(conf)
+                    let resp = mk_failed_repeat_msg(conf);
+                    logger.log_warn(&resp);
+                    resp
                 }
             }
-            _ => mk_failed_repeat_msg(conf),
+            _ => {
+                let resp = mk_failed_repeat_msg(conf);
+                logger.log_warn(&resp);
+                resp
+            }
         };
         return repeat_msg;
     }
@@ -82,6 +97,7 @@ mod tests {
 
     #[test]
     fn should_repeat_user_messages() {
+        let mut logger = Logger::disable_logs();
         let mut state = ConsoleBotState::new();
         let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
@@ -89,12 +105,13 @@ mod tests {
             default_repeat_number: 1,
         };
         let msg = String::from("Hi!");
-        let response = respond_to_user(&conf, &mut state, msg.clone());
+        let response = respond_to_user(&mut logger, &conf, &mut state, msg.clone());
         assert_eq!(response, msg);
     }
 
     #[test]
     fn should_send_special_help_msg() {
+        let mut logger = Logger::disable_logs();
         let mut state = ConsoleBotState::new();
         let help_msg = String::from("help_msg");
         let conf = StaticBotSettings {
@@ -103,12 +120,13 @@ mod tests {
             default_repeat_number: 1,
         };
         let msg = String::from("/help");
-        let response = respond_to_user(&conf, &mut state, msg.clone());
+        let response = respond_to_user(&mut logger, &conf, &mut state, msg.clone());
         assert_eq!(response, help_msg);
     }
 
     #[test]
     fn should_send_special_repeat_msg() {
+        let mut logger = Logger::disable_logs();
         let mut state = ConsoleBotState::new();
         let repeat_msg = String::from("repeat_msg\nCurrent repeat number is 1");
         let conf = StaticBotSettings {
@@ -117,12 +135,13 @@ mod tests {
             default_repeat_number: 1,
         };
         let msg = String::from("/repeat");
-        let response = respond_to_user(&conf, &mut state, msg.clone());
+        let response = respond_to_user(&mut logger, &conf, &mut state, msg.clone());
         assert_eq!(response, repeat_msg);
     }
 
     #[test]
     fn should_change_repeat_number() {
+        let mut logger = Logger::disable_logs();
         let mut state = ConsoleBotState::new();
         let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
@@ -130,14 +149,15 @@ mod tests {
             default_repeat_number: 1,
         };
         let msg1 = String::from("/repeat");
-        let _response1 = respond_to_user(&conf, &mut state, msg1);
+        let _response1 = respond_to_user(&mut logger, &conf, &mut state, msg1);
         let msg2 = String::from("2");
-        let response2 = respond_to_user(&conf, &mut state, msg2);
+        let response2 = respond_to_user(&mut logger, &conf, &mut state, msg2);
         assert_eq!(response2, "Repeat number changed to: 2");
     }
 
     #[test]
     fn should_repeat_user_messages_with_customized_repeat() {
+        let mut logger = Logger::disable_logs();
         let mut state = ConsoleBotState::new();
         let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
@@ -145,11 +165,11 @@ mod tests {
             default_repeat_number: 1,
         };
         let msg1 = String::from("/repeat");
-        let _response1 = respond_to_user(&conf, &mut state, msg1);
+        let _response1 = respond_to_user(&mut logger, &conf, &mut state, msg1);
         let msg2 = String::from("2");
-        let _response2 = respond_to_user(&conf, &mut state, msg2);
+        let _response2 = respond_to_user(&mut logger, &conf, &mut state, msg2);
         let msg3 = String::from("hey");
-        let response3 = respond_to_user(&conf, &mut state, msg3);
+        let response3 = respond_to_user(&mut logger, &conf, &mut state, msg3);
         assert_eq!(response3, "hey\nhey");
     }
 }
