@@ -25,23 +25,29 @@ Or --config param",
 
     let mut logger = Logger::initialize(&config.logger_settings);
 
-    logger.log(LogLevel::Debug, "Started logger".to_string());
+    logger.log(LogLevel::Debug, "Started logger");
 
     match config.bot_to_run {
-        BotToRun::Console => run_console_bot(&config.static_bot_options),
+        BotToRun::Console => {
+            logger.log_info("Starting console bot");
+            run_console_bot(&mut logger, &config.static_bot_options)
+        }
         BotToRun::Telegram => {
+            logger.log_info("Starting telegram bot");
             run_telegram_bot(&config.telegram_bot_token, &config.static_bot_options).unwrap_or_else(
                 |err| {
                     match err {
                         TelegramBotError::Api(e) => {
-                            eprintln!("Telegram API responded with error:\n  {}", e)
+                            logger.log_error(&format!("Telegram API responded with error:\n  {}", e))
                         }
-                        TelegramBotError::HttpClient(e) => eprintln!("HTTP client error:\n  {}", e),
+                        TelegramBotError::HttpClient(e) => {
+                            logger.log_error(&format!("HTTP client error:\n  {}", e))
+                        }
                         TelegramBotError::Serialization(e) => {
-                            eprintln!("Could not (de)serialize:\n  {}", e)
+                            logger.log_error(&format!("Could not (de)serialize:\n  {}", e))
                         }
                         TelegramBotError::Parsing(e) => {
-                            eprintln!("Could not parse data:\n  {}", e)
+                            logger.log_error(&format!("Could not parse data:\n  {}", e))
                         }
                     }
                     process::exit(1);

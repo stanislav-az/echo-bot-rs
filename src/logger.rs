@@ -45,12 +45,20 @@ impl Logger {
         }
     }
 
-    pub fn log(&mut self, level: LogLevel, msg_text: String) {
+    pub fn disable_logs() -> Self {
+        Logger {
+            log_to_file: None,
+            log_to_stderr: false,
+            log_level_starting_from: LogLevel::Warn,
+        }
+    }
+
+    pub fn log(&mut self, level: LogLevel, msg_text: &str) {
         if level >= self.log_level_starting_from
             && (self.log_to_stderr || self.log_to_file.is_some())
         {
             let msg = LoggerMsg {
-                text: msg_text,
+                text: msg_text.to_string(),
                 level,
                 timestamp: Utc::now(),
             };
@@ -62,5 +70,18 @@ impl Logger {
                 writeln!(file, "{}", &json).expect("Could not append to log file");
             }
         }
+    }
+
+    pub fn log_debug(&mut self, msg_text: &str) {
+        self.log(LogLevel::Debug, msg_text)
+    }
+    pub fn log_info(&mut self, msg_text: &str) {
+        self.log(LogLevel::Info, msg_text)
+    }
+    pub fn log_warn(&mut self, msg_text: &str) {
+        self.log(LogLevel::Warn, msg_text)
+    }
+    pub fn log_error(&mut self, msg_text: &str) {
+        self.log(LogLevel::Error, msg_text)
     }
 }
