@@ -34,7 +34,7 @@ Or --config param",
         }
         BotToRun::Telegram => {
             logger.log_info("Starting telegram bot");
-            run_telegram_bot(&config.telegram_bot_token, &config.static_bot_options).unwrap_or_else(
+            run_telegram_bot(&mut logger, &config.telegram_bot_token, &config.static_bot_options).unwrap_or_else(
                 |err| {
                     match err {
                         TelegramBotError::Api(e) => {

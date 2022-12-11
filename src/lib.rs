@@ -22,6 +22,7 @@ pub fn run_console_bot(logger: &mut Logger, conf: &StaticBotSettings) {
 }
 
 pub fn run_telegram_bot(
+    logger: &mut Logger,
     bot_token: &String,
     conf: &StaticBotSettings,
 ) -> Result<(), TelegramBotError> {
@@ -30,7 +31,7 @@ pub fn run_telegram_bot(
     let client = telegram_client::HttpIO;
 
     loop {
-        telegram_bot::one_communication_cycle(bot_token, conf, &client, &mut bot_state)?;
+        telegram_bot::one_communication_cycle(logger, bot_token, conf, &client, &mut bot_state)?;
         thread::sleep(delay);
     }
 }

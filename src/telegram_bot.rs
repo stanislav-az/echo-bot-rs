@@ -7,7 +7,7 @@ pub mod error;
 use std::collections::HashMap;
 
 use self::api_client::TelegramApiClient;
-use crate::config::StaticBotSettings;
+use crate::{config::StaticBotSettings, logger::Logger};
 use api_types::*;
 use domain_types::*;
 pub use error::TelegramBotError;
@@ -28,6 +28,7 @@ impl TelegramBotState {
 }
 
 pub fn one_communication_cycle(
+    logger: &mut Logger,
     bot_token: &String,
     conf: &StaticBotSettings,
     client: &impl TelegramApiClient,
@@ -38,19 +39,22 @@ pub fn one_communication_cycle(
         .get_updates(bot_token, &offset)?
         .into_iter()
         .try_for_each(|u| {
-            let update_id = handle_update(bot_token, conf, client, state, u)?;
+            let update_id = handle_update(logger, bot_token, conf, client, state, u)?;
             state.last_handled_update_id = Some(update_id);
+            logger.log_debug(&format!("Handled update: {}", update_id));
             Ok(())
         })
 }
 
 pub fn handle_update(
+    logger: &mut Logger,
     bot_token: &String,
     conf: &StaticBotSettings,
     client: &impl TelegramApiClient,
     state: &mut TelegramBotState,
     update: TelegramUpdate,
 ) -> Result<u64, TelegramBotError> {
+    logger.log_debug(&format!("Received new update: {:?}", &update));
     let u = Update::new(update);
     match u {
         Update::Ignored { update_id } => Ok(update_id),
@@ -64,11 +68,12 @@ pub fn handle_update(
             state
                 .repeat_number_for_chat_id
                 .insert(chat_id, chosen_repeat);
-            client.answer_callback_query(
-                bot_token,
-                &query_id,
-                &format!("Number of repeats was changed to {}", chosen_repeat),
-            )?;
+            let answer = format!("Number of repeats was changed to {}", chosen_repeat);
+            logger.log_info(&format!(
+                "Responding to callback query in chat {}: {}",
+                chat_id, &answer
+            ));
+            client.answer_callback_query(bot_token, &query_id, &answer)?;
             Ok(update_id)
         }
         Update::Message {
@@ -82,6 +87,10 @@ pub fn handle_update(
                     .get(&chat_id)
                     .copied()
                     .unwrap_or(conf.default_repeat_number);
+                logger.log_info(&format!(
+                    "Sending sticker in chat {}: {}",
+                    chat_id, &file_id
+                ));
                 for _ in 0..repeat_number {
                     client.send_sticker(bot_token, chat_id, &file_id)?;
                 }
@@ -93,12 +102,14 @@ pub fn handle_update(
                     .get(&chat_id)
                     .copied()
                     .unwrap_or(conf.default_repeat_number);
+                logger.log_info(&format!("Sending text in chat {}: {}", chat_id, &text));
                 for _ in 0..repeat_number {
                     client.send_message(bot_token, chat_id, &text)?;
                 }
                 Ok(update_id)
             }
             MessageContents::HelpCommand => {
+                logger.log_info(&format!("Sending help message in chat {chat_id}"));
                 client.send_message(bot_token, chat_id, &conf.help_msg)?;
                 Ok(update_id)
             }
@@ -122,6 +133,7 @@ pub fn handle_update(
                     "{}\nCurrent repeat number is {}",
                     conf.repeat_msg, repeat_number
                 );
+                logger.log_info(&format!("Sending repeat message in chat {chat_id}"));
                 client.send_keyboard(bot_token, chat_id, &repeat_msg, keyboard)?;
                 Ok(update_id)
             }
@@ -252,6 +264,7 @@ mod tests {
 
     #[test]
     fn should_repeat_user_text_messages() -> Result<(), TelegramBotError> {
+        let mut logger = Logger::disable_logs();
         let mut state = TelegramBotState::new();
         let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
@@ -274,13 +287,14 @@ mod tests {
             text: msg_text.clone(),
         };
         let client = MockClient::new(updates);
-        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        one_communication_cycle(&mut logger, &String::new(), &conf, &client, &mut state)?;
         assert_eq!(client.sent_messages.borrow().clone(), vec![msg]);
         Ok(())
     }
 
     #[test]
     fn should_repeat_user_sticker_messages() -> Result<(), TelegramBotError> {
+        let mut logger = Logger::disable_logs();
         let mut state = TelegramBotState::new();
         let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
@@ -305,13 +319,14 @@ mod tests {
             file_id: sticker_id.clone(),
         };
         let client = MockClient::new(updates);
-        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        one_communication_cycle(&mut logger, &String::new(), &conf, &client, &mut state)?;
         assert_eq!(client.sent_stickers.borrow().clone(), vec![msg]);
         Ok(())
     }
 
     #[test]
     fn should_query_next_updates_with_offset() -> Result<(), TelegramBotError> {
+        let mut logger = Logger::disable_logs();
         let mut state = TelegramBotState::new();
         let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
@@ -330,7 +345,13 @@ mod tests {
             callback_query: None,
         }];
         let first_client = MockClient::new(updates);
-        one_communication_cycle(&String::new(), &conf, &first_client, &mut state)?;
+        one_communication_cycle(
+            &mut logger,
+            &String::new(),
+            &conf,
+            &first_client,
+            &mut state,
+        )?;
         assert_eq!(first_client.sent_offsets.borrow().clone(), vec![None]);
         let updates = vec![TelegramUpdate {
             update_id: first_update_id + 1,
@@ -342,7 +363,13 @@ mod tests {
             callback_query: None,
         }];
         let second_client = MockClient::new(updates);
-        one_communication_cycle(&String::new(), &conf, &second_client, &mut state)?;
+        one_communication_cycle(
+            &mut logger,
+            &String::new(),
+            &conf,
+            &second_client,
+            &mut state,
+        )?;
         let correct_offset = Some(first_update_id + 1);
         assert_eq!(
             second_client.sent_offsets.borrow().clone(),
@@ -353,6 +380,7 @@ mod tests {
 
     #[test]
     fn should_send_special_help_msg() -> Result<(), TelegramBotError> {
+        let mut logger = Logger::disable_logs();
         let mut state = TelegramBotState::new();
         let help_msg = String::from("help_msg");
         let conf = StaticBotSettings {
@@ -376,13 +404,14 @@ mod tests {
             text: help_msg.clone(),
         };
         let client = MockClient::new(updates);
-        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        one_communication_cycle(&mut logger, &String::new(), &conf, &client, &mut state)?;
         assert_eq!(client.sent_messages.borrow().clone(), vec![msg]);
         Ok(())
     }
 
     #[test]
     fn should_send_special_repeat_msg() -> Result<(), TelegramBotError> {
+        let mut logger = Logger::disable_logs();
         let mut state = TelegramBotState::new();
         let repeat_msg = String::from("repeat_msg\nCurrent repeat number is 1");
         let conf = StaticBotSettings {
@@ -406,13 +435,14 @@ mod tests {
             text: repeat_msg.clone(),
         };
         let client = MockClient::new(updates);
-        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        one_communication_cycle(&mut logger, &String::new(), &conf, &client, &mut state)?;
         assert_eq!(client.sent_messages.borrow().clone(), vec![msg]);
         Ok(())
     }
 
     #[test]
     fn should_change_repeat_number() -> Result<(), TelegramBotError> {
+        let mut logger = Logger::disable_logs();
         let mut state = TelegramBotState::new();
         let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
@@ -431,7 +461,7 @@ mod tests {
             callback_query: None,
         }];
         let client = MockClient::new(updates);
-        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        one_communication_cycle(&mut logger, &String::new(), &conf, &client, &mut state)?;
         let query_id = String::from("789asdf");
         let updates = vec![TelegramUpdate {
             update_id: 2,
@@ -447,7 +477,7 @@ mod tests {
             }),
         }];
         let client = MockClient::new(updates);
-        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        one_communication_cycle(&mut logger, &String::new(), &conf, &client, &mut state)?;
         let callback_answer = CallbackAnswer {
             query_id,
             text: String::from("Number of repeats was changed to 2"),
@@ -461,6 +491,7 @@ mod tests {
 
     #[test]
     fn should_repeat_user_messages_with_customized_repeat() -> Result<(), TelegramBotError> {
+        let mut logger = Logger::disable_logs();
         let mut state = TelegramBotState::new();
         let conf = StaticBotSettings {
             help_msg: String::from("help_msg"),
@@ -479,7 +510,7 @@ mod tests {
             callback_query: None,
         }];
         let client = MockClient::new(updates);
-        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        one_communication_cycle(&mut logger, &String::new(), &conf, &client, &mut state)?;
         let query_id = String::from("789asdf");
         let updates = vec![TelegramUpdate {
             update_id: 2,
@@ -495,7 +526,7 @@ mod tests {
             }),
         }];
         let client = MockClient::new(updates);
-        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        one_communication_cycle(&mut logger, &String::new(), &conf, &client, &mut state)?;
         let msg_text = String::from("hi!");
         let updates = vec![TelegramUpdate {
             update_id: 3,
@@ -511,7 +542,7 @@ mod tests {
             text: msg_text.clone(),
         };
         let client = MockClient::new(updates);
-        one_communication_cycle(&String::new(), &conf, &client, &mut state)?;
+        one_communication_cycle(&mut logger, &String::new(), &conf, &client, &mut state)?;
         assert_eq!(
             client.sent_messages.borrow().clone(),
             vec![msg.clone(), msg.clone()]
