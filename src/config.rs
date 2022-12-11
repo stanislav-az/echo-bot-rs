@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::read_to_string;
 
+use crate::logger::LogLevel;
+
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
     pub bot_to_run: BotToRun,
@@ -27,6 +29,7 @@ pub enum BotToRun {
 pub struct LoggerSettings {
     pub log_to_file: Option<String>,
     pub log_to_stderr: bool,
+    pub log_level_starting_from: LogLevel,
 }
 
 impl Config {

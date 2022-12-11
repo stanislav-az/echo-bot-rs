@@ -8,6 +8,7 @@ use crate::config::LoggerSettings;
 pub struct Logger {
     log_to_file: Option<File>,
     log_to_stderr: bool,
+    log_level_starting_from: LogLevel,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -17,7 +18,7 @@ pub struct LoggerMsg {
     pub level: LogLevel,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum LogLevel {
     Debug,
     Info,
@@ -40,11 +41,14 @@ impl Logger {
         Logger {
             log_to_file: file,
             log_to_stderr: config.log_to_stderr,
+            log_level_starting_from: config.log_level_starting_from,
         }
     }
 
     pub fn log(&mut self, level: LogLevel, msg_text: String) {
-        if self.log_to_stderr || self.log_to_file.is_some() {
+        if level >= self.log_level_starting_from
+            && (self.log_to_stderr || self.log_to_file.is_some())
+        {
             let msg = LoggerMsg {
                 text: msg_text,
                 level,
