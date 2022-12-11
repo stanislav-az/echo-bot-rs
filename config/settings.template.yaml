@@ -7,3 +7,7 @@ static_bot_options:
   default_repeat_number: 1
 
 telegram_bot_token: "000000000:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+logger_settings:
+  log_to_stderr: true
+  log_to_file: "logs/bot.log" # Optional parameter: "file_path" || null

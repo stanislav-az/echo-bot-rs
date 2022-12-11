@@ -7,6 +7,7 @@ pub struct Config {
     pub bot_to_run: BotToRun,
     pub static_bot_options: StaticBotSettings,
     pub telegram_bot_token: String,
+    pub logger_settings: LoggerSettings,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -20,6 +21,12 @@ pub struct StaticBotSettings {
 pub enum BotToRun {
     Telegram,
     Console,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LoggerSettings {
+    pub log_to_file: Option<String>,
+    pub log_to_stderr: bool,
 }
 
 impl Config {
