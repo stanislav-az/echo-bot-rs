@@ -2,6 +2,7 @@ use std::io;
 use std::{thread, time};
 
 pub mod config;
+pub mod logger;
 pub mod console_bot;
 pub mod telegram_bot;
 use config::StaticBotSettings;

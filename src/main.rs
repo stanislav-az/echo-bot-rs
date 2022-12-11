@@ -1,5 +1,6 @@
 use echo_bot_rs::config::BotToRun;
 use echo_bot_rs::config::Config;
+use echo_bot_rs::logger::Logger;
 use echo_bot_rs::run_console_bot;
 use echo_bot_rs::run_telegram_bot;
 use echo_bot_rs::TelegramBotError;
@@ -20,6 +21,10 @@ Or --config param",
         );
         process::exit(1);
     });
+
+    let mut logger = Logger::initialize(&config.logger_settings);
+
+    logger.log("msg".to_string());
 
     match config.bot_to_run {
         BotToRun::Console => run_console_bot(&config.static_bot_options),
