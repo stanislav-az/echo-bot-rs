@@ -8,51 +8,26 @@ use echo_bot_rs::TelegramBotError;
 use std::env;
 use std::process;
 
+fn add_p(p: i32) -> Box<dyn Fn(i32) -> i32> {
+    Box::new(move |x| x + p)
+}
+
+fn do_add(f: impl Fn(i32) -> i32, arg: i32) -> i32 {
+    f(arg)
+}
+
+fn do_add_pointer(f: fn(i32) -> i32, arg: i32) -> i32 {
+    f(arg)
+}
+
+fn add_one(x: i32) -> i32 {
+    x + 1
+}
+
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let default_path = String::from("config/settings.local.yaml");
-
-    let config = Config::build(&default_path, &args).unwrap_or_else(|err| {
-        eprintln!(
-            "\
-Problem parsing configuration: {}
-Expected default path for it: {}
-Or --config param",
-            err, default_path,
-        );
-        process::exit(1);
-    });
-
-    let mut logger = Logger::initialize(&config.logger_settings);
-
-    logger.log(LogLevel::Debug, "Started logger");
-
-    match config.bot_to_run {
-        BotToRun::Console => {
-            logger.log_info("Starting console bot");
-            run_console_bot(&mut logger, &config.static_bot_options)
-        }
-        BotToRun::Telegram => {
-            logger.log_info("Starting telegram bot");
-            run_telegram_bot(&mut logger, &config.telegram_bot_token, &config.static_bot_options).unwrap_or_else(
-                |err| {
-                    match err {
-                        TelegramBotError::Api(e) => {
-                            logger.log_error(&format!("Telegram API responded with error:\n  {}", e))
-                        }
-                        TelegramBotError::HttpClient(e) => {
-                            logger.log_error(&format!("HTTP client error:\n  {}", e))
-                        }
-                        TelegramBotError::Serialization(e) => {
-                            logger.log_error(&format!("Could not (de)serialize:\n  {}", e))
-                        }
-                        TelegramBotError::Parsing(e) => {
-                            logger.log_error(&format!("Could not parse data:\n  {}", e))
-                        }
-                    }
-                    process::exit(1);
-                },
-            )
-        }
-    }
+    let fun = add_p(2);
+    let x = do_add(fun, 23);
+    let y = do_add_pointer(add_one, 41);
+    println!("do_add: {x}");
+    println!("do_add_pointer: {y}");
 }
