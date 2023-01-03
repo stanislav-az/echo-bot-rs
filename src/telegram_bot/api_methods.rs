@@ -1,6 +1,6 @@
 use serde::de::DeserializeOwned;
 
-use super::api_types::{TelegramMessage, TelegramResponse, TelegramUpdates};
+use super::api_types::{TelegramMessage, TelegramResponse, TelegramUpdates, TelegramApiError};
 use crate::TelegramBotError;
 
 pub fn get_updates(
@@ -82,8 +82,19 @@ pub fn mk_telegram_api_url(bot_token: &String, method_name: &str) -> String {
 }
 
 pub fn parse_response<T: DeserializeOwned>(resp: ureq::Response) -> Result<T, TelegramBotError> {
+    let def_err = TelegramBotError::Api(TelegramApiError { error_code: 400, description: String::from("()") });
     resp.into_json::<TelegramResponse<T>>()
         .map_err(TelegramBotError::Serialization)?
         .into_result()
-        .map_err(TelegramBotError::Api)
+        .map_err(const_g(def_err))
+}
+
+pub fn const_f<T, O>(param: T) -> impl FnOnce(O) -> T {
+    let ignore = |_ignored: O| param;
+    return ignore
+}
+
+pub fn const_g<T: 'static, O>(param: T) -> Box<dyn FnOnce(O) -> T> {
+    let ignore = |_ignored: O| param;
+    Box::new(ignore)
 }
