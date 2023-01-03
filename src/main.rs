@@ -26,8 +26,10 @@ fn add_one(x: i32) -> i32 {
 
 fn main() {
     let fun = add_p(2);
+    let c = fun(23);
     let x = do_add(fun, 23);
     let y = do_add_pointer(add_one, 41);
+    println!("closure call: {c}");
     println!("do_add: {x}");
     println!("do_add_pointer: {y}");
 }
